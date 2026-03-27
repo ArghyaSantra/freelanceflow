@@ -50,6 +50,7 @@ jobs:
           host: ${{ secrets.EC2_STAGING_IP }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
           script: |
             cd /var/www/freelanceflow
             git pull origin dev
@@ -77,6 +78,7 @@ jobs:
           host: ${{ secrets.EC2_PROD_IP }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
           script: |
             cd /var/www/freelanceflow
             git pull origin main
