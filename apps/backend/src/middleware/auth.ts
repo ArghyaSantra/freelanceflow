@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { User, Workspace, WorkspaceMember } from "@prisma/client";
+import type { User, Workspace, WorkspaceMember } from "@prisma/client/edge";
 import { verifyAccessToken } from "../lib/jwt";
 import prisma from "../lib/prisma";
 

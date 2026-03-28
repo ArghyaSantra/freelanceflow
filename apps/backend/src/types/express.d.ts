@@ -1,4 +1,4 @@
-import { User, Workspace, WorkspaceMember } from "@prisma/client";
+import type { User, Workspace, WorkspaceMember } from "@prisma/client/edge";
 
 declare module "express-serve-static-core" {
   interface Request {
