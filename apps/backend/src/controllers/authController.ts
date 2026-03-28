@@ -7,6 +7,7 @@ import {
   verifyRefreshToken,
 } from "../lib/jwt";
 import { AppError } from "../middleware/errorHandler";
+import { PrismaClient } from "@prisma/client";
 
 export const register = async (
   req: Request,
@@ -32,7 +33,17 @@ export const register = async (
     const passwordHash = await bcrypt.hash(password, 12);
 
     const { user, workspace, member } = await prisma.$transaction(
-      async (tx) => {
+      async (
+        tx: Omit<
+          PrismaClient,
+          | "$connect"
+          | "$disconnect"
+          | "$on"
+          | "$transaction"
+          | "$use"
+          | "$extends"
+        >,
+      ) => {
         const user = await tx.user.create({
           data: { email, passwordHash },
         });

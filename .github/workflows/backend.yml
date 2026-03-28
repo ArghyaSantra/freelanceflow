@@ -58,7 +58,7 @@ jobs:
             cd /var/www/freelanceflow
             git pull origin dev
             cd apps/backend
-            npm ci --only=production
+            npm ci
             npx prisma generate
             npx prisma migrate deploy
             npm run build
@@ -86,7 +86,7 @@ jobs:
             cd /var/www/freelanceflow
             git pull origin main
             cd apps/backend
-            npm ci --only=production
+            npm ci
             npx prisma generate
             npx prisma migrate deploy
             npm run build
