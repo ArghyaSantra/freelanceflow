@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import { errorHandler } from "./middleware/errorHandler";
 import authRoutes from "./routes/auth";
+import clientRoutes from "./routes/clients";
 
 dotenv.config();
 
@@ -26,6 +27,8 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/auth", authRoutes);
+app.use("/clients", clientRoutes);
+
 app.use(errorHandler);
 
 const start = async (): Promise<void> => {
