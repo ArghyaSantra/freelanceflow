@@ -10,6 +10,7 @@ import projectRoutes from "./routes/projects";
 import documentRoutes from "./routes/documents";
 import documentFieldRoutes from "./routes/documentFields";
 import publicRoutes from "./routes/public";
+import invoiceRoutes from "./routes/invoices";
 
 dotenv.config();
 
@@ -36,6 +37,7 @@ app.use("/projects", projectRoutes);
 app.use("/documents", documentRoutes);
 app.use("/documents", documentFieldRoutes);
 app.use("/public", publicRoutes);
+app.use("/invoices", invoiceRoutes);
 
 app.use(errorHandler);
 
