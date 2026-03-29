@@ -8,6 +8,8 @@ import authRoutes from "./routes/auth";
 import clientRoutes from "./routes/clients";
 import projectRoutes from "./routes/projects";
 import documentRoutes from "./routes/documents";
+import documentFieldRoutes from "./routes/documentFields";
+import publicRoutes from "./routes/public";
 
 dotenv.config();
 
@@ -32,6 +34,8 @@ app.use("/auth", authRoutes);
 app.use("/clients", clientRoutes);
 app.use("/projects", projectRoutes);
 app.use("/documents", documentRoutes);
+app.use("/documents", documentFieldRoutes);
+app.use("/public", publicRoutes);
 
 app.use(errorHandler);
 
