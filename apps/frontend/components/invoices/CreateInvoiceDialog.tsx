@@ -68,7 +68,7 @@ export default function CreateInvoiceDialog({
     control,
     formState: { errors },
   } = useForm<InvoiceForm>({
-    resolver: zodResolver(invoiceSchema),
+    resolver: zodResolver(invoiceSchema) as any,
     defaultValues: {
       currency: "INR",
       taxRate: 18,
