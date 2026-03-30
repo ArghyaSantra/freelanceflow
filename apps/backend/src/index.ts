@@ -11,6 +11,7 @@ import documentRoutes from "./routes/documents";
 import documentFieldRoutes from "./routes/documentFields";
 import publicRoutes from "./routes/public";
 import invoiceRoutes from "./routes/invoices";
+import morgan from "morgan";
 
 dotenv.config();
 
@@ -18,14 +19,16 @@ const app = express();
 const PORT = process.env.PORT ?? 3000;
 
 app.use(helmet());
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL ?? "http://localhost:5173",
+    origin: process.env.FRONTEND_URL ?? "http://localhost:3001",
     credentials: true,
   }),
 );
 app.use(express.json());
 app.use(cookieParser());
+app.use(morgan("dev"));
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", service: "freelanceflow-api" });
