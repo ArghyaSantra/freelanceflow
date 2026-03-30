@@ -49,7 +49,14 @@ export const useAuth = create<AuthState>()(
           const response = await authApi.login({ email, password });
           const { accessToken, user, workspace, member } = response.data;
           localStorage.setItem("accessToken", accessToken);
-          Cookies.set("accessToken", accessToken, { expires: 1 }); // 1 day
+          // Cookies.set("accessToken", accessToken, { expires: 1 }); // 1 day
+          document.cookie = `accessToken=${accessToken}; path=/; max-age=86400`;
+
+          console.log(
+            "Login successful, setting token:",
+            accessToken.slice(0, 20) + "...",
+          );
+
           set({
             user,
             workspace,
