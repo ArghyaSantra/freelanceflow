@@ -15,6 +15,7 @@ import morgan from "morgan";
 
 dotenv.config();
 
+console.log(process.env.AWS_S3_BUCKET);
 const app = express();
 const PORT = process.env.PORT ?? 3000;
 
