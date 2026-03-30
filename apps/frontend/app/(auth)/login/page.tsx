@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -30,8 +30,14 @@ type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, isAuthenticated, _hasHydrated } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (_hasHydrated && isAuthenticated) {
+      router.replace("/dashboard");
+    }
+  }, [_hasHydrated, isAuthenticated, router]);
 
   const {
     register,
