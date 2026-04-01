@@ -68,6 +68,7 @@ export default function DocumentDetailPage() {
   const fetchDocument = async () => {
     try {
       const response = await documentsApi.get(id);
+      console.log({ response });
       setDocument(response.data);
     } catch {
       router.push("/dashboard/documents");
@@ -167,7 +168,10 @@ export default function DocumentDetailPage() {
           )}
 
           {document.signedFileUrl && (
-            <Button variant="outline">
+            <Button
+              variant="outline"
+              onClick={() => window.open(document.signedFileUrl, "_blank")}
+            >
               <Download className="w-4 h-4 mr-2" />
               Download signed
             </Button>
