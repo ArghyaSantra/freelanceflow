@@ -17,6 +17,7 @@ export default function DashboardLayout({
 
   useEffect(() => {
     if (!_hasHydrated) return;
+    console.log({ isAuthenticated });
 
     if (!isAuthenticated) {
       router.replace("/login");
