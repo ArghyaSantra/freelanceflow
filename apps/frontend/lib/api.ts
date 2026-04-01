@@ -24,6 +24,16 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // don't retry refresh endpoint itself
+    if (originalRequest.url?.includes("/auth/refresh")) {
+      localStorage.removeItem("accessToken");
+      document.cookie = "accessToken=; path=/; max-age=0";
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
@@ -36,12 +46,17 @@ api.interceptors.response.use(
 
         const { accessToken } = response.data;
         localStorage.setItem("accessToken", accessToken);
+        document.cookie = `accessToken=${accessToken}; path=/; max-age=86400`;
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
 
         return api(originalRequest);
       } catch {
         localStorage.removeItem("accessToken");
-        window.location.href = "/login";
+        document.cookie = "accessToken=; path=/; max-age=0";
+        if (typeof window !== "undefined") {
+          window.location.href = "/login";
+        }
+        return Promise.reject(error);
       }
     }
 

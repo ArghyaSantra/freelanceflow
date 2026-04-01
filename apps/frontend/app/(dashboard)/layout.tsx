@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import Sidebar from "@/components/dashboard/Sidebar";
@@ -13,23 +13,26 @@ export default function DashboardLayout({
 }) {
   const { isAuthenticated, _hasHydrated } = useAuth();
   const router = useRouter();
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (_hasHydrated && !isAuthenticated) {
-      router.push("/login");
-    }
-  }, [isAuthenticated, _hasHydrated, router]);
+    if (!_hasHydrated) return;
 
-  // wait for hydration before rendering
-  if (!_hasHydrated) {
+    if (!isAuthenticated) {
+      router.replace("/login");
+      return;
+    }
+
+    setReady(true);
+  }, [_hasHydrated, isAuthenticated, router]);
+
+  if (!ready) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-50">
         <div className="text-slate-400 text-sm">Loading...</div>
       </div>
     );
   }
-
-  if (!isAuthenticated) return null;
 
   return (
     <div className="flex h-screen bg-slate-50">

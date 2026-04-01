@@ -89,7 +89,11 @@ export interface Document {
   status: DocumentStatus;
   publicToken: string;
   signerEmail?: string;
+  signerIp?: string;
+  sentAt?: string; // ← add this
+  sentBy?: string; // ← add this
   signedAt?: string;
+  expiresAt?: string; // ← add this
   createdAt: string;
   updatedAt: string;
   project?: Project;
@@ -120,6 +124,10 @@ export interface Invoice {
   notes?: string;
   publicToken: string;
   paymentLink?: string;
+  razorpayOrderId?: string; // ← add
+  razorpayPaymentId?: string; // ← add
+  sentBy?: string; // ← add
+  sentAt?: string; // ← add
   paidAt?: string;
   createdAt: string;
   updatedAt: string;
