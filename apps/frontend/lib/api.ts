@@ -1,4 +1,5 @@
 import axios from "axios";
+import { useAuth } from "@/hooks/useAuth";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 
@@ -26,7 +27,7 @@ api.interceptors.response.use(
 
     // don't retry refresh endpoint itself
     if (originalRequest.url?.includes("/auth/refresh")) {
-      localStorage.removeItem("accessToken");
+      useAuth.getState().clearAuth();
       document.cookie = "accessToken=; path=/; max-age=0";
       if (typeof window !== "undefined") {
         window.location.href = "/login";
@@ -51,7 +52,7 @@ api.interceptors.response.use(
 
         return api(originalRequest);
       } catch {
-        localStorage.removeItem("accessToken");
+        useAuth.getState().clearAuth();
         document.cookie = "accessToken=; path=/; max-age=0";
         if (typeof window !== "undefined") {
           window.location.href = "/login";

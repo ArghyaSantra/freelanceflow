@@ -31,6 +31,8 @@ type LoginForm = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const router = useRouter();
   const { login, isAuthenticated, _hasHydrated } = useAuth();
+  console.log("Login page");
+  console.log({ login, isAuthenticated, _hasHydrated });
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
