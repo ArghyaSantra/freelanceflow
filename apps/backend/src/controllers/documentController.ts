@@ -169,9 +169,7 @@ export const getDocument = async (
       const signedKey = document.signedFileUrl
         .split(".amazonaws.com/")[1]
         .split("?")[0]; // remove any query params if present
-      console.log("Signed key:", signedKey);
       signedViewUrl = await getPresignedDownloadUrl(signedKey);
-      console.log("Generated signed view URL:", signedViewUrl.slice(0, 150));
     }
 
     res.json({ ...document, viewUrl, signedViewUrl });

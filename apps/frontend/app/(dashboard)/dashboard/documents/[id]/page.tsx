@@ -55,7 +55,7 @@ const statusConfig = {
   },
 };
 
-type DocumentDetail = Document & { viewUrl?: string };
+type DocumentDetail = Document & { viewUrl?: string; signedViewUrl?: string };
 
 export default function DocumentDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -170,7 +170,7 @@ export default function DocumentDetailPage() {
           {document.signedFileUrl && (
             <Button
               variant="outline"
-              onClick={() => window.open(document.signedFileUrl, "_blank")}
+              onClick={() => window.open(document.signedViewUrl, "_blank")}
             >
               <Download className="w-4 h-4 mr-2" />
               Download signed
