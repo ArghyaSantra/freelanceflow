@@ -122,6 +122,7 @@ export const publicApi = {
   getDocument: (token: string) => api.get(`/public/sign/${token}`),
   signDocument: (token: string, data: unknown) =>
     api.post(`/public/sign/${token}`, data),
+  getInvoice: (token: string) => api.get(`/public/invoice/${token}`),
 };
 
 // invoice endpoints

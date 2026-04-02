@@ -176,3 +176,57 @@ export const signDocument = async (
     next(err);
   }
 };
+
+export const getInvoiceByToken = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const token = req.params.token as string;
+
+    const invoice = await prisma.invoice.findUnique({
+      where: { publicToken: token },
+      include: {
+        project: {
+          include: {
+            client: true,
+            workspace: {
+              select: {
+                name: true,
+                logoUrl: true,
+                address: true,
+                gstin: true,
+                pan: true,
+                bankName: true,
+                bankAccountNumber: true,
+                bankIfsc: true,
+                invoiceFooter: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!invoice) {
+      throw new AppError(404, "Invoice not found");
+    }
+
+    if (invoice.status === "CANCELLED") {
+      throw new AppError(400, "This invoice has been cancelled");
+    }
+
+    // mark as viewed if first time
+    if (invoice.status === "SENT") {
+      await prisma.invoice.update({
+        where: { id: invoice.id },
+        data: { status: "VIEWED" },
+      });
+    }
+
+    res.json(invoice);
+  } catch (err) {
+    next(err);
+  }
+};

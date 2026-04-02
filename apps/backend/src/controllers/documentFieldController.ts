@@ -2,6 +2,13 @@ import { Request, Response, NextFunction } from "express";
 import prisma from "../lib/prisma";
 import { AppError } from "../middleware/errorHandler";
 import { FieldType } from "@prisma/client";
+import { Queue } from "bullmq";
+import { Redis } from "ioredis";
+
+const redis = new Redis(process.env.REDIS_URL!, {
+  maxRetriesPerRequest: null,
+});
+const emailQueue = new Queue("send-email", { connection: redis });
 
 export const createDocumentField = async (
   req: Request,
@@ -138,7 +145,10 @@ export const sendDocument = async (
       include: {
         documentFields: true,
         project: {
-          include: { client: true },
+          include: {
+            client: true,
+            workspace: true, // ← add this
+          },
         },
       },
     });
@@ -175,6 +185,13 @@ export const sendDocument = async (
 
     // signing link
     const signingLink = `${process.env.FRONTEND_URL}/sign/${document.publicToken}`;
+
+    await emailQueue.add("signing-request", {
+      to: document.project.client.email,
+      signingLink,
+      documentTitle: document.title,
+      workspaceName: document.project.workspace.name, // ← use document not updated
+    });
 
     res.json({
       ...updated,

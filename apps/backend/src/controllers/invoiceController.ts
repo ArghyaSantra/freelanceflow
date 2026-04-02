@@ -2,6 +2,13 @@ import { Request, Response, NextFunction } from "express";
 import prisma from "../lib/prisma";
 import { AppError } from "../middleware/errorHandler";
 import { InvoiceStatus } from "@prisma/client";
+import { Queue } from "bullmq";
+import { Redis } from "ioredis";
+
+const redis = new Redis(process.env.REDIS_URL!, {
+  maxRetriesPerRequest: null,
+});
+const emailQueue = new Queue("send-email", { connection: redis });
 
 interface LineItem {
   description: string;
@@ -311,7 +318,30 @@ export const sendInvoice = async (
       data: remindersToCreate,
     });
 
+    const invoiceWithClient = await prisma.invoice.findUnique({
+      where: { id },
+      include: {
+        project: {
+          include: {
+            client: true,
+            workspace: true,
+          },
+        },
+      },
+    });
+
     const paymentLink = `${process.env.FRONTEND_URL}/invoice/${invoice.publicToken}`;
+
+    if (invoiceWithClient?.project.client.email) {
+      await emailQueue.add("invoice", {
+        to: invoiceWithClient.project.client.email,
+        invoiceNumber: invoice.invoiceNumber,
+        total: invoice.total,
+        dueDate: new Date(invoice.dueDate).toLocaleDateString("en-IN"),
+        paymentLink,
+        workspaceName: invoiceWithClient.project.workspace.name,
+      });
+    }
 
     res.json({
       ...updated,
