@@ -66,6 +66,22 @@ enum ReminderStatus {
   CANCELLED
 }
 
+enum AssetType {
+  IMAGE
+  VIDEO
+}
+
+enum AssetStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum AuthorType {
+  FREELANCER
+  CLIENT
+}
+
 // ─── Models ──────────────────────────────────────────────
 
 model User {
@@ -77,6 +93,8 @@ model User {
 
   memberOf      WorkspaceMember?
   refreshTokens RefreshToken[]
+  client    Client?   // ← add to user relations
+
 
   @@map("users")
 }
@@ -117,6 +135,8 @@ model Workspace {
   documents   Document[]
   invoices    Invoice[]
   reminders   Reminder[]
+  assets      Asset[]   // ← add to workspace relations
+  clientInvitations ClientInvitation[]
 
   @@map("workspaces")
 }
@@ -153,26 +173,6 @@ model Invitation {
   @@map("invitations")
 }
 
-model Client {
-  id          String    @id @default(uuid())
-  workspaceId String    @map("workspace_id")
-  name        String
-  email       String
-  company     String?
-  phone       String?
-  address     String?
-  isActive    Boolean   @default(true) @map("is_active")
-  deletedAt   DateTime? @map("deleted_at")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  projects  Project[]
-
-  @@unique([workspaceId, email])
-  @@map("clients")
-}
-
 model Project {
   id          String        @id @default(uuid())
   workspaceId String        @map("workspace_id")
@@ -187,6 +187,7 @@ model Project {
   client    Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
   documents Document[]
   invoices  Invoice[]
+  assets    Asset[]   // ← add to project relations
 
   @@map("projects")
 }
@@ -282,4 +283,80 @@ model Reminder {
   document  Document? @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   @@map("reminders")
+}
+
+model Client {
+  id          String    @id @default(uuid())
+  workspaceId String    @map("workspace_id")
+  name        String
+  email       String
+  company     String?
+  phone       String?
+  address     String?
+  isActive    Boolean   @default(true) @map("is_active")
+  deletedAt   DateTime? @map("deleted_at")
+  hasAccount  Boolean   @default(false) @map("has_account")  // ← add
+  userId      String?   @unique @map("user_id")               // ← add
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projects  Project[]
+  user      User?     @relation(fields: [userId], references: [id])  // ← add
+  assets    Asset[]                                                    // ← add
+  invitations ClientInvitation[]
+
+  @@unique([workspaceId, email])
+  @@map("clients")
+}
+
+model Asset {
+  id          String      @id @default(uuid())
+  workspaceId String      @map("workspace_id")
+  projectId   String      @map("project_id")
+  clientId    String      @map("client_id")
+  title       String
+  description String?
+  fileUrl     String      @map("file_url")
+  type        AssetType   @default(IMAGE)
+  status      AssetStatus @default(PENDING)
+  uploadedBy  String      @map("uploaded_by")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  workspace Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project   Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  client    Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  comments  AssetComment[]
+
+  @@map("assets")
+}
+
+model AssetComment {
+  id         String     @id @default(uuid())
+  assetId    String     @map("asset_id")
+  authorId   String     @map("author_id")
+  authorType AuthorType @map("author_type")
+  content    String
+  createdAt  DateTime   @default(now()) @map("created_at")
+
+  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@map("asset_comments")
+}
+
+model ClientInvitation {
+  id          String    @id @default(uuid())
+  workspaceId String    @map("workspace_id")
+  clientId    String    @map("client_id")
+  email       String
+  token       String    @unique @default(uuid())
+  expiresAt   DateTime  @map("expires_at")
+  acceptedAt  DateTime? @map("accepted_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  client    Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@map("client_invitations")
 }

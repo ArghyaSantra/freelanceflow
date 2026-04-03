@@ -13,6 +13,9 @@ import publicRoutes from "./routes/public";
 import invoiceRoutes from "./routes/invoices";
 import workspaceRoutes from "./routes/workspace";
 import morgan from "morgan";
+import clientAuthRoutes from "./routes/clientAuth";
+import clientPortalRoutes from "./routes/clientPortal";
+import assetRoutes from "./routes/assets";
 
 dotenv.config();
 
@@ -59,6 +62,9 @@ app.use("/documents", documentFieldRoutes);
 app.use("/public", publicRoutes);
 app.use("/invoices", invoiceRoutes);
 app.use("/workspace", workspaceRoutes);
+app.use("/client/auth", clientAuthRoutes);
+app.use("/client", clientPortalRoutes);
+app.use("/assets", assetRoutes);
 
 app.use(errorHandler);
 

@@ -8,6 +8,7 @@ import {
   sendSigningRequestEmail,
   sendDocumentSignedEmail,
   sendInvoiceEmail,
+  sendClientInvitationEmail,
 } from "./jobs/sendEmail";
 
 console.log("🔧 FreelanceFlow Worker starting...");
@@ -63,6 +64,15 @@ new Worker(
           job.data.dueDate,
           job.data.paymentLink,
           job.data.workspaceName,
+        );
+        break;
+
+      case "client-invitation":
+        await sendClientInvitationEmail(
+          job.data.to,
+          job.data.clientName,
+          job.data.workspaceName,
+          job.data.inviteLink,
         );
         break;
 
