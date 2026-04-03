@@ -87,3 +87,33 @@ export const sendInvoiceEmail = async (
     `,
   });
 };
+
+export const sendClientInvitationEmail = async (
+  to: string,
+  clientName: string,
+  workspaceName: string,
+  inviteLink: string,
+): Promise<void> => {
+  await resend.emails.send({
+    from: "FreelanceFlow <onboarding@resend.dev>",
+    to,
+    subject: `${workspaceName} has invited you to their client portal`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>You've been invited to ${workspaceName}'s client portal</h2>
+        <p>Hi ${clientName},</p>
+        <p><strong>${workspaceName}</strong> has added you as a client on FreelanceFlow. 
+        Create your account to view your documents, invoices and project assets.</p>
+        <a href="${inviteLink}"
+           style="display: inline-block; background: #1e293b; color: white;
+                  padding: 12px 24px; border-radius: 6px; text-decoration: none;
+                  margin: 16px 0;">
+          Create Account
+        </a>
+        <p style="color: #64748b; font-size: 14px;">
+          This invitation expires in 7 days.
+        </p>
+      </div>
+    `,
+  });
+};
