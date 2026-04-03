@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import prisma from "../lib/prisma";
 import { getPresignedUploadUrl, getPresignedDownloadUrl } from "../lib/s3";
 import { AppError } from "../middleware/errorHandler";
+import { createNotification, getClientUserId } from "../lib/notifications";
 
 const generateAssetKey = (
   workspaceId: string,
@@ -60,8 +61,16 @@ export const createAsset = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const { assetId, projectId, clientId, title, description, fileKey } =
-      req.body;
+    const {
+      assetId,
+      projectId,
+      clientId,
+      title,
+      description,
+      fileKey,
+      contentType,
+    } = req.body;
+
     const workspaceId = req.workspace!.id;
     const uploadedBy = req.user!.id;
 
@@ -101,7 +110,7 @@ export const createAsset = async (
         title,
         description: description ?? null,
         fileUrl,
-        type: "IMAGE",
+        type: (contentType as string)?.startsWith("video/") ? "VIDEO" : "IMAGE",
         status: "PENDING",
         uploadedBy,
       },
@@ -111,6 +120,18 @@ export const createAsset = async (
         comments: true,
       },
     });
+    const clientUserId = await getClientUserId(clientId);
+    if (clientUserId) {
+      await createNotification({
+        workspaceId,
+        recipientId: clientUserId,
+        recipientType: "CLIENT",
+        type: "ASSET_UPLOADED", // reuse closest type, or add ASSET_UPLOADED to schema
+        title: "New asset for review",
+        message: `"${title}" has been uploaded for your review.`,
+        linkPath: `/client/assets/${assetId}`,
+      });
+    }
 
     res.status(201).json({ asset });
   } catch (err) {
@@ -249,6 +270,19 @@ export const addFreelancerComment = async (
         content: content.trim(),
       },
     });
+
+    const clientUserId = await getClientUserId(asset.clientId);
+    if (clientUserId) {
+      await createNotification({
+        workspaceId: asset.workspaceId,
+        recipientId: clientUserId,
+        recipientType: "CLIENT",
+        type: "ASSET_COMMENT",
+        title: "New comment on asset",
+        message: `A comment was added to "${asset.title}".`,
+        linkPath: `/client/assets/${id}`,
+      });
+    }
 
     res.status(201).json({ comment });
   } catch (err) {

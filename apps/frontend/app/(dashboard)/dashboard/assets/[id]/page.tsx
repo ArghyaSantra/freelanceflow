@@ -160,17 +160,24 @@ export default function AssetDetailPage() {
           className="flex-1 bg-slate-100 rounded-xl overflow-hidden flex items-center justify-center cursor-zoom-in"
           onClick={() => setFullscreen(true)}
         >
-          {asset.viewUrl && (
+          {asset.viewUrl && asset.type === "VIDEO" ? (
+            <video
+              src={asset.viewUrl}
+              controls
+              className="max-w-full max-h-full"
+            />
+          ) : (
             <img
               src={asset.viewUrl}
               alt={asset.title}
-              className="max-w-full max-h-full object-contain"
+              className="max-w-full max-h-full object-contain cursor-zoom-in"
+              onClick={() => setFullscreen(true)}
             />
           )}
         </div>
 
         {/* Fullscreen overlay */}
-        {fullscreen && (
+        {fullscreen && asset.type !== "VIDEO" && (
           <div
             className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center cursor-zoom-out"
             onClick={() => setFullscreen(false)}

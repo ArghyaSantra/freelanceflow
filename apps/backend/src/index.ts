@@ -16,6 +16,10 @@ import morgan from "morgan";
 import clientAuthRoutes from "./routes/clientAuth";
 import clientPortalRoutes from "./routes/clientPortal";
 import assetRoutes from "./routes/assets";
+import {
+  notificationRoutes,
+  clientNotificationRoutes,
+} from "./routes/notifications";
 
 dotenv.config();
 
@@ -63,8 +67,10 @@ app.use("/public", publicRoutes);
 app.use("/invoices", invoiceRoutes);
 app.use("/workspace", workspaceRoutes);
 app.use("/client/auth", clientAuthRoutes);
+app.use("/client/notifications", clientNotificationRoutes);
 app.use("/client", clientPortalRoutes);
 app.use("/assets", assetRoutes);
+app.use("/notifications", notificationRoutes);
 
 app.use(errorHandler);
 

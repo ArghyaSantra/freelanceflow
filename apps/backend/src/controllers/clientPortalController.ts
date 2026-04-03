@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import prisma from "../lib/prisma";
 import { getPresignedDownloadUrl } from "../lib/s3";
 import { AppError } from "../middleware/errorHandler";
+import { createNotification, getFreelancerUserId } from "../lib/notifications";
 
 // GET /client/documents
 export const getClientDocuments = async (
@@ -230,6 +231,19 @@ export const approveAsset = async (
       data: { status: "APPROVED" },
     });
 
+    const freelancerUserId = await getFreelancerUserId(asset.workspaceId);
+    if (freelancerUserId) {
+      await createNotification({
+        workspaceId: asset.workspaceId,
+        recipientId: freelancerUserId,
+        recipientType: "FREELANCER",
+        type: "ASSET_APPROVED",
+        title: "Asset approved",
+        message: `"${asset.title}" was approved by the client.`,
+        linkPath: `/dashboard/assets/${asset.id}`,
+      });
+    }
+
     res.json({ asset: updated });
   } catch (err) {
     next(err);
@@ -280,6 +294,19 @@ export const rejectAsset = async (
         : []),
     ]);
 
+    const freelancerUserId = await getFreelancerUserId(asset.workspaceId);
+    if (freelancerUserId) {
+      await createNotification({
+        workspaceId: asset.workspaceId,
+        recipientId: freelancerUserId,
+        recipientType: "FREELANCER",
+        type: "ASSET_REJECTED",
+        title: "Asset rejected",
+        message: `"${asset.title}" was rejected by the client.`,
+        linkPath: `/dashboard/assets/${asset.id}`,
+      });
+    }
+
     res.json({ asset: updated });
   } catch (err) {
     next(err);
@@ -319,6 +346,19 @@ export const addAssetComment = async (
         content: content.trim(),
       },
     });
+
+    const freelancerUserId = await getFreelancerUserId(asset.workspaceId);
+    if (freelancerUserId) {
+      await createNotification({
+        workspaceId: asset.workspaceId,
+        recipientId: freelancerUserId,
+        recipientType: "FREELANCER",
+        type: "ASSET_COMMENT",
+        title: "New comment from client",
+        message: `Client commented on "${asset.title}".`,
+        linkPath: `/dashboard/assets/${asset.id}`,
+      });
+    }
 
     res.status(201).json({ comment });
   } catch (err) {

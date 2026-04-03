@@ -284,8 +284,28 @@ export default function ProjectDetailPage() {
                           router.push(`/dashboard/assets/${asset.id}`)
                         }
                       >
-                        <div className="aspect-square bg-slate-100 overflow-hidden">
-                          {asset.viewUrl ? (
+                        <div className="aspect-square bg-slate-100 overflow-hidden relative">
+                          {asset.type === "VIDEO" ? (
+                            <>
+                              <video
+                                src={asset.viewUrl}
+                                className="w-full h-full object-cover"
+                                muted
+                                preload="metadata"
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                <div className="w-10 h-10 bg-white/90 rounded-full flex items-center justify-center">
+                                  <svg
+                                    className="w-4 h-4 text-slate-800 ml-0.5"
+                                    fill="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path d="M8 5v14l11-7z" />
+                                  </svg>
+                                </div>
+                              </div>
+                            </>
+                          ) : asset.viewUrl ? (
                             <img
                               src={asset.viewUrl}
                               alt={asset.title}

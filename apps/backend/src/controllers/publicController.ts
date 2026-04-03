@@ -4,6 +4,7 @@ import { getPresignedDownloadUrl } from "../lib/s3";
 import { AppError } from "../middleware/errorHandler";
 import { Queue } from "bullmq";
 import { Redis } from "ioredis";
+import { createNotification, getFreelancerUserId } from "../lib/notifications";
 
 const redis = new Redis(process.env.REDIS_URL!, {
   maxRetriesPerRequest: null,
@@ -165,6 +166,19 @@ export const signDocument = async (
         to: adminMember.user.email,
         signerName,
         documentTitle: document.title,
+      });
+    }
+
+    const freelancerUserId = await getFreelancerUserId(document.workspaceId);
+    if (freelancerUserId) {
+      await createNotification({
+        workspaceId: document.workspaceId,
+        recipientId: freelancerUserId,
+        recipientType: "FREELANCER",
+        type: "DOCUMENT_SIGNED",
+        title: "Document signed",
+        message: `"${document.title}" has been signed.`,
+        linkPath: `/dashboard/documents/${document.id}`,
       });
     }
 
