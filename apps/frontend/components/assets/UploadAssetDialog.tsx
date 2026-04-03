@@ -55,6 +55,9 @@ export default function UploadAssetDialog({
   const [preview, setPreview] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [previewType, setPreviewType] = useState<"image" | "video" | null>(
+    null,
+  );
 
   const {
     register,
@@ -66,21 +69,32 @@ export default function UploadAssetDialog({
     resolver: zodResolver(uploadSchema),
   });
 
+  // change file validation
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      toast.error("Only image files are allowed");
+    const isImage = file.type.startsWith("image/");
+    const isVideo = file.type === "video/mp4";
+
+    if (!isImage && !isVideo) {
+      toast.error("Only image and MP4 video files are allowed");
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("File size must be less than 10MB");
+    if (file.size > 50 * 1024 * 1024) {
+      // 50MB for videos
+      toast.error("File size must be less than 50MB");
       return;
     }
 
     setSelectedFile(file);
-    setPreview(URL.createObjectURL(file));
+    if (isImage) {
+      setPreview(URL.createObjectURL(file));
+      setPreviewType("image");
+    } else {
+      setPreview(URL.createObjectURL(file));
+      setPreviewType("video");
+    }
   };
 
   const onSubmit = async (data: UploadForm) => {
@@ -121,6 +135,7 @@ export default function UploadAssetDialog({
         title: data.title,
         description: data.description || undefined,
         fileKey: key,
+        contentType: selectedFile.type, // ← add this
       });
 
       toast.success("Asset uploaded successfully");
@@ -205,23 +220,31 @@ export default function UploadAssetDialog({
               onClick={() => fileInputRef.current?.click()}
             >
               {preview ? (
-                <img
-                  src={preview}
-                  alt="Preview"
-                  className="w-full max-h-48 object-contain bg-slate-50"
-                />
+                previewType === "video" ? (
+                  <video
+                    src={preview}
+                    controls
+                    className="w-full max-h-48 object-contain bg-slate-50"
+                  />
+                ) : (
+                  <img
+                    src={preview}
+                    alt="Preview"
+                    className="w-full max-h-48 object-contain bg-slate-50"
+                  />
+                )
               ) : (
                 <div className="p-6 text-center text-slate-400">
                   <ImageIcon className="w-8 h-8 mx-auto mb-2" />
-                  <p className="text-sm">Click to select an image</p>
-                  <p className="text-xs mt-1">JPG, PNG, WebP — max 10MB</p>
+                  <p className="text-sm">Click to select an image or video</p>
+                  <p className="text-xs mt-1">JPG, PNG, WebP, MP4 — max 50MB</p>
                 </div>
               )}
             </div>
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/*,video/mp4"
               className="hidden"
               onChange={handleFileChange}
             />

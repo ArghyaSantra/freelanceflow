@@ -82,6 +82,22 @@ enum AuthorType {
   CLIENT
 }
 
+enum NotificationType {
+  DOCUMENT_SIGNED
+  DOCUMENT_SENT
+  INVOICE_PAID
+  INVOICE_SENT
+  ASSET_COMMENT
+  ASSET_APPROVED
+  ASSET_REJECTED
+  ASSET_UPLOADED
+}
+
+enum NotificationRecipientType {
+  FREELANCER
+  CLIENT
+}
+
 // ─── Models ──────────────────────────────────────────────
 
 model User {
@@ -137,7 +153,7 @@ model Workspace {
   reminders   Reminder[]
   assets      Asset[]   // ← add to workspace relations
   clientInvitations ClientInvitation[]
-
+  notifications Notification[]
   @@map("workspaces")
 }
 
@@ -359,4 +375,21 @@ model ClientInvitation {
   client    Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
   @@map("client_invitations")
+}
+
+model Notification {
+  id            String                   @id @default(uuid())
+  workspaceId   String                   @map("workspace_id")
+  recipientId   String                   @map("recipient_id")
+  recipientType NotificationRecipientType @map("recipient_type")
+  type          NotificationType
+  title         String
+  message       String
+  read          Boolean                  @default(false)
+  linkPath      String?                  @map("link_path")
+  createdAt     DateTime                 @default(now()) @map("created_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
 }

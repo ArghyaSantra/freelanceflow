@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useClientAuth } from "@/hooks/useClientAuth";
+import { clientApi } from "@/lib/clientApi";
 import Link from "next/link";
 import {
   FileText,
@@ -10,7 +11,21 @@ import {
   ImageIcon,
   LogOut,
   LayoutDashboard,
+  Bell,
 } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+
+interface Notification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  read: boolean;
+  linkPath?: string;
+  createdAt: string;
+}
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 
 export default function ClientLayout({
   children,
@@ -21,6 +36,65 @@ export default function ClientLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [ready, setReady] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifOpen, setNotifOpen] = useState(false);
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const res = await clientApi.get("/client/notifications");
+      setNotifications(res.data.notifications);
+      setUnreadCount(res.data.unreadCount);
+    } catch {
+      /* silent */
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    fetchNotifications();
+
+    const token = localStorage.getItem("clientAccessToken");
+    if (!token) return;
+
+    const es = new EventSource(
+      `${API_URL}/client/notifications/stream?token=${token}`,
+    );
+
+    es.onmessage = (e) => {
+      try {
+        console.log({ e });
+        const notif = JSON.parse(e.data);
+        setNotifications((prev) => [notif, ...prev.slice(0, 29)]);
+        setUnreadCount((prev) => prev + 1);
+      } catch {
+        /* ignore */
+      }
+    };
+
+    return () => es.close();
+  }, [isAuthenticated, fetchNotifications]);
+
+  const handleNotifOpen = async (open: boolean) => {
+    setNotifOpen(open);
+    if (open && unreadCount > 0) {
+      try {
+        await clientApi.post("/client/notifications/mark-read");
+        setUnreadCount(0);
+        setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+      } catch {
+        /* silent */
+      }
+    }
+  };
+
+  const notifIcon: Record<string, string> = {
+    DOCUMENT_SENT: "📄",
+    INVOICE_SENT: "🧾",
+    ASSET_COMMENT: "💬",
+    ASSET_UPLOADED: "🖼️",
+  };
 
   useEffect(() => {
     if (!_hasHydrated) return;
@@ -92,11 +166,85 @@ export default function ClientLayout({
         </div>
       </aside>
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-white border-b border-slate-200 px-6 py-4">
+        <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
           <p className="text-sm text-slate-500">
             {navItems.find((n) => pathname.startsWith(n.href))?.label ??
               "Portal"}
           </p>
+
+          {/* Notification bell */}
+          <div className="relative">
+            <button
+              onClick={() => handleNotifOpen(!notifOpen)}
+              className="relative p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors"
+            >
+              <Bell size={18} />
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+              )}
+            </button>
+
+            {notifOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setNotifOpen(false)}
+                />
+                <div className="absolute right-0 top-10 z-20 w-80 bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden">
+                  <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+                    <p className="text-sm font-medium text-slate-700">
+                      Notifications
+                    </p>
+                    {unreadCount > 0 && (
+                      <p className="text-xs text-slate-400">
+                        {unreadCount} unread
+                      </p>
+                    )}
+                  </div>
+                  {notifications.length === 0 ? (
+                    <div className="py-8 text-center text-sm text-slate-400">
+                      No notifications yet
+                    </div>
+                  ) : (
+                    <div className="max-h-80 overflow-y-auto divide-y divide-slate-50">
+                      {notifications.map((notif) => (
+                        <button
+                          key={notif.id}
+                          onClick={() => {
+                            setNotifOpen(false);
+                            if (notif.linkPath) router.push(notif.linkPath);
+                          }}
+                          className={`w-full flex gap-3 items-start px-4 py-3 text-left hover:bg-slate-50 transition-colors ${!notif.read ? "bg-slate-50/70" : ""}`}
+                        >
+                          <span className="text-base shrink-0 mt-0.5">
+                            {notifIcon[notif.type] ?? "🔔"}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p
+                              className={`text-sm ${!notif.read ? "font-medium" : ""}`}
+                            >
+                              {notif.title}
+                            </p>
+                            <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">
+                              {notif.message}
+                            </p>
+                            <p className="text-xs text-slate-400 mt-1">
+                              {formatDistanceToNow(new Date(notif.createdAt), {
+                                addSuffix: true,
+                              })}
+                            </p>
+                          </div>
+                          {!notif.read && (
+                            <span className="w-2 h-2 bg-blue-500 rounded-full shrink-0 mt-1.5" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         </header>
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>

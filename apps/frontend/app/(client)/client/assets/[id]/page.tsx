@@ -18,6 +18,7 @@ interface Asset {
   description: string | null;
   status: string;
   viewUrl: string;
+  type: "IMAGE" | "VIDEO";
   project: { id: string; name: string };
   comments: Comment[];
 }
@@ -153,19 +154,26 @@ export default function ClientAssetDetailPage() {
       <div className="flex gap-4 flex-1 min-h-0">
         {/* Image */}
         {/* Image */}
-        <div
-          className="flex-1 bg-slate-100 rounded-xl overflow-hidden flex items-center justify-center cursor-zoom-in"
-          onClick={() => setFullscreen(true)}
-        >
-          <img
-            src={asset.viewUrl}
-            alt={asset.title}
-            className="max-w-full max-h-full object-contain"
-          />
+        {/* Media */}
+        <div className="flex-1 bg-slate-100 rounded-xl overflow-hidden flex items-center justify-center">
+          {asset.type === "VIDEO" ? (
+            <video
+              src={asset.viewUrl}
+              controls
+              className="max-w-full max-h-full"
+            />
+          ) : (
+            <img
+              src={asset.viewUrl}
+              alt={asset.title}
+              className="max-w-full max-h-full object-contain cursor-zoom-in"
+              onClick={() => setFullscreen(true)}
+            />
+          )}
         </div>
 
-        {/* Fullscreen overlay */}
-        {fullscreen && (
+        {/* Fullscreen overlay — images only */}
+        {fullscreen && asset.type !== "VIDEO" && (
           <div
             className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center cursor-zoom-out"
             onClick={() => setFullscreen(false)}
@@ -184,7 +192,6 @@ export default function ClientAssetDetailPage() {
             </button>
           </div>
         )}
-
         {/* Right panel */}
         <div className="w-80 shrink-0 flex flex-col gap-3 overflow-y-auto">
           {/* Approve / Reject */}
