@@ -185,10 +185,14 @@ export const getClientAssets = async (
 
     // generate presigned URLs for each asset
     const assetsWithUrls = await Promise.all(
-      assets.map(async (asset) => ({
-        ...asset,
-        viewUrl: await getPresignedDownloadUrl(asset.fileUrl),
-      })),
+      assets.map(async (asset) => {
+        const key = asset.fileUrl.split(".amazonaws.com/")[1]; // ← fix
+
+        return {
+          ...asset,
+          viewUrl: await getPresignedDownloadUrl(key),
+        };
+      }),
     );
 
     res.json({ assets: assetsWithUrls });

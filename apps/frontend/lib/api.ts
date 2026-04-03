@@ -135,3 +135,17 @@ export const invoicesApi = {
   markPaid: (id: string) => api.post(`/invoices/${id}/mark-paid`),
   cancel: (id: string) => api.post(`/invoices/${id}/cancel`),
 };
+
+export const assetsApi = {
+  getUploadUrl: (data: {
+    filename: string;
+    projectId: string;
+    contentType?: string;
+  }) => api.post("/assets/upload-url", data),
+  create: (data: unknown) => api.post("/assets", data),
+  list: (projectId: string) => api.get("/assets", { params: { projectId } }),
+  get: (id: string) => api.get(`/assets/${id}`),
+  delete: (id: string) => api.delete(`/assets/${id}`),
+  addComment: (id: string, content: string) =>
+    api.post(`/assets/${id}/comments`, { content }),
+};
