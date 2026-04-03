@@ -1,6 +1,13 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../lib/prisma";
 import { AppError } from "../middleware/errorHandler";
+import { Queue } from "bullmq";
+import { Redis } from "ioredis";
+
+const redis = new Redis(process.env.REDIS_URL!, {
+  maxRetriesPerRequest: null,
+});
+const emailQueue = new Queue("send-email", { connection: redis });
 
 export const createClient = async (
   req: Request,
@@ -34,6 +41,27 @@ export const createClient = async (
         phone,
         address,
       },
+    });
+
+    res.status(201).json(client);
+
+    // create invitation
+    const invitation = await prisma.clientInvitation.create({
+      data: {
+        workspaceId,
+        clientId: client.id,
+        email: client.email,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      },
+    });
+
+    const inviteLink = `${process.env.FRONTEND_URL}/client/register?token=${invitation.token}`;
+
+    await emailQueue.add("client-invitation", {
+      to: client.email,
+      clientName: client.name,
+      workspaceName: req.workspace!.name,
+      inviteLink,
     });
 
     res.status(201).json(client);

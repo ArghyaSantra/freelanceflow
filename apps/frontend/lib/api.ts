@@ -1,4 +1,5 @@
 import axios from "axios";
+import { useAuth } from "@/hooks/useAuth";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 
@@ -26,7 +27,7 @@ api.interceptors.response.use(
 
     // don't retry refresh endpoint itself
     if (originalRequest.url?.includes("/auth/refresh")) {
-      localStorage.removeItem("accessToken");
+      useAuth.getState().clearAuth();
       document.cookie = "accessToken=; path=/; max-age=0";
       if (typeof window !== "undefined") {
         window.location.href = "/login";
@@ -51,7 +52,7 @@ api.interceptors.response.use(
 
         return api(originalRequest);
       } catch {
-        localStorage.removeItem("accessToken");
+        useAuth.getState().clearAuth();
         document.cookie = "accessToken=; path=/; max-age=0";
         if (typeof window !== "undefined") {
           window.location.href = "/login";
@@ -133,4 +134,18 @@ export const invoicesApi = {
   send: (id: string) => api.post(`/invoices/${id}/send`),
   markPaid: (id: string) => api.post(`/invoices/${id}/mark-paid`),
   cancel: (id: string) => api.post(`/invoices/${id}/cancel`),
+};
+
+export const assetsApi = {
+  getUploadUrl: (data: {
+    filename: string;
+    projectId: string;
+    contentType?: string;
+  }) => api.post("/assets/upload-url", data),
+  create: (data: unknown) => api.post("/assets", data),
+  list: (projectId: string) => api.get("/assets", { params: { projectId } }),
+  get: (id: string) => api.get(`/assets/${id}`),
+  delete: (id: string) => api.delete(`/assets/${id}`),
+  addComment: (id: string, content: string) =>
+    api.post(`/assets/${id}/comments`, { content }),
 };

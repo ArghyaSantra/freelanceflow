@@ -2,6 +2,16 @@ import { Request, Response, NextFunction } from "express";
 import prisma from "../lib/prisma";
 import { getPresignedDownloadUrl } from "../lib/s3";
 import { AppError } from "../middleware/errorHandler";
+import { Queue } from "bullmq";
+import { Redis } from "ioredis";
+import { createNotification, getFreelancerUserId } from "../lib/notifications";
+
+const redis = new Redis(process.env.REDIS_URL!, {
+  maxRetriesPerRequest: null,
+});
+
+const signatureQueue = new Queue("embed-signature", { connection: redis });
+const emailQueue = new Queue("send-email", { connection: redis });
 
 export const getDocumentByToken = async (
   req: Request,
@@ -102,6 +112,17 @@ export const signDocument = async (
 
     const document = await prisma.document.findUnique({
       where: { publicToken: token },
+      include: {
+        project: {
+          include: {
+            workspace: {
+              include: {
+                members: { include: { user: true } },
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!document) {
@@ -116,13 +137,11 @@ export const signDocument = async (
       throw new AppError(400, "This signing link has expired");
     }
 
-    // get signer IP
     const signerIp =
       (req.headers["x-forwarded-for"] as string)?.split(",")[0] ||
       req.socket.remoteAddress ||
       "unknown";
 
-    // update document as signed
     const signed = await prisma.document.update({
       where: { id: document.id },
       data: {
@@ -133,10 +152,35 @@ export const signDocument = async (
       },
     });
 
-    // TODO: queue BullMQ job to embed signature into PDF
-    // we will add this when worker service is set up
-    console.log(`Document ${document.id} signed by ${signerEmail}`);
-    console.log(`Signature image length: ${signatureImage.length}`);
+    // queue signature embedding job
+    await signatureQueue.add("embed-signature", {
+      documentId: document.id,
+      signatureImage,
+    });
+
+    // notify freelancer via email
+    const workspace = document.project.workspace;
+    const adminMember = workspace.members.find((m) => m.role === "ADMIN");
+    if (adminMember) {
+      await emailQueue.add("document-signed", {
+        to: adminMember.user.email,
+        signerName,
+        documentTitle: document.title,
+      });
+    }
+
+    const freelancerUserId = await getFreelancerUserId(document.workspaceId);
+    if (freelancerUserId) {
+      await createNotification({
+        workspaceId: document.workspaceId,
+        recipientId: freelancerUserId,
+        recipientType: "FREELANCER",
+        type: "DOCUMENT_SIGNED",
+        title: "Document signed",
+        message: `"${document.title}" has been signed.`,
+        linkPath: `/dashboard/documents/${document.id}`,
+      });
+    }
 
     res.json({
       message: "Document signed successfully",

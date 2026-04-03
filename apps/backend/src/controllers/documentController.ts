@@ -32,6 +32,10 @@ export const getUploadUrl = async (
 
     // generate a document ID upfront
     const documentId = uuidv4();
+    const sanitizedFilename = filename
+      .replace(/\s+/g, "_") // spaces → underscores
+      .replace(/[()]/g, "") // remove parentheses
+      .replace(/[^a-zA-Z0-9._-]/g, ""); // remove special chars
     const key = generateDocumentKey(workspaceId, documentId, filename);
 
     const uploadUrl = await getPresignedUploadUrl(key);
@@ -155,10 +159,20 @@ export const getDocument = async (
     }
 
     // generate presigned download URL for the PDF
-    const key = document.fileUrl.split(".amazonaws.com/")[1];
+    const key = decodeURIComponent(
+      document.fileUrl.split(".amazonaws.com/")[1],
+    );
     const viewUrl = await getPresignedDownloadUrl(key);
 
-    res.json({ ...document, viewUrl });
+    let signedViewUrl: string | undefined;
+    if (document.signedFileUrl) {
+      const signedKey = document.signedFileUrl
+        .split(".amazonaws.com/")[1]
+        .split("?")[0]; // remove any query params if present
+      signedViewUrl = await getPresignedDownloadUrl(signedKey);
+    }
+
+    res.json({ ...document, viewUrl, signedViewUrl });
   } catch (err) {
     next(err);
   }

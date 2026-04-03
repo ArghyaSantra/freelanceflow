@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import prisma from "../lib/prisma";
 import { AppError } from "../middleware/errorHandler";
 import { FieldType } from "@prisma/client";
+import { createNotification, getClientUserId } from "../lib/notifications";
 
 export const createDocumentField = async (
   req: Request,
@@ -175,6 +176,19 @@ export const sendDocument = async (
 
     // signing link
     const signingLink = `${process.env.FRONTEND_URL}/sign/${document.publicToken}`;
+
+    const clientUserId = await getClientUserId(document.project.client.id);
+    if (clientUserId) {
+      await createNotification({
+        workspaceId,
+        recipientId: clientUserId,
+        recipientType: "CLIENT",
+        type: "DOCUMENT_SENT",
+        title: "New document to sign",
+        message: `"${document.title}" has been sent to you for signing.`,
+        linkPath: `/client/documents/${documentId}`,
+      });
+    }
 
     res.json({
       ...updated,

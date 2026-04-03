@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import PDFSignatureEditor from "@/components/documents/PDFSignatureEditor";
 import {
   ArrowLeft,
   Send,
@@ -55,7 +56,7 @@ const statusConfig = {
   },
 };
 
-type DocumentDetail = Document & { viewUrl?: string };
+type DocumentDetail = Document & { viewUrl?: string; signedViewUrl?: string };
 
 export default function DocumentDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -166,8 +167,11 @@ export default function DocumentDetailPage() {
             </Button>
           )}
 
-          {document.signedFileUrl && (
-            <Button variant="outline">
+          {document.signedViewUrl && (
+            <Button
+              variant="outline"
+              onClick={() => window.open(document.signedViewUrl, "_blank")}
+            >
               <Download className="w-4 h-4 mr-2" />
               Download signed
             </Button>
@@ -175,7 +179,33 @@ export default function DocumentDetailPage() {
         </div>
       </div>
 
-      {/* Details */}
+      {/* PDF Editor — full width */}
+      <Card className="border-slate-200">
+        <CardHeader>
+          <CardTitle className="text-base">
+            {document.status === "DRAFT"
+              ? "Place Signature Fields"
+              : "Document Preview"}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {document.viewUrl ? (
+            <PDFSignatureEditor
+              documentId={id}
+              viewUrl={document.viewUrl}
+              existingFields={document.documentFields ?? []}
+              onFieldsChange={fetchDocument}
+              readonly={document.status !== "DRAFT"}
+            />
+          ) : (
+            <div className="text-center py-6">
+              <p className="text-sm text-slate-500">PDF not available</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Details — two column grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="border-slate-200">
           <CardHeader>
@@ -230,11 +260,6 @@ export default function DocumentDetailPage() {
                 <p className="text-sm text-slate-500">
                   No signature fields added yet
                 </p>
-                {document.status === "DRAFT" && (
-                  <p className="text-xs text-slate-400 mt-1">
-                    Signature field placement UI coming soon
-                  </p>
-                )}
               </div>
             ) : (
               <div className="space-y-2">

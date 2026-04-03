@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { projectsApi } from "@/lib/api";
-import { Project, Document, Invoice } from "@/types";
+import { projectsApi, api } from "@/lib/api";
+import { Project, Document, Invoice, Asset } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import UploadDocumentDialog from "@/components/documents/UploadDocumentDialog";
 import CreateInvoiceDialog from "@/components/invoices/CreateInvoiceDialog";
-import { ArrowLeft, FileText, Receipt, ChevronRight } from "lucide-react";
+import UploadAssetDialog from "@/components/assets/UploadAssetDialog";
+import {
+  ArrowLeft,
+  FileText,
+  Receipt,
+  ChevronRight,
+  ImageIcon,
+  CheckCircle,
+  XCircle,
+  Clock,
+} from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +43,24 @@ const invStatusConfig = {
   CANCELLED: { label: "Cancelled", className: "bg-slate-100 text-slate-500" },
 };
 
+const assetStatusConfig = {
+  PENDING: {
+    label: "Pending",
+    className: "bg-yellow-100 text-yellow-700",
+    icon: Clock,
+  },
+  APPROVED: {
+    label: "Approved",
+    className: "bg-green-100 text-green-700",
+    icon: CheckCircle,
+  },
+  REJECTED: {
+    label: "Rejected",
+    className: "bg-red-100 text-red-700",
+    icon: XCircle,
+  },
+};
+
 type ProjectDetail = Project & {
   documents: Document[];
   invoices: Invoice[];
@@ -42,7 +70,7 @@ export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [project, setProject] = useState<ProjectDetail | null>(null);
-
+  const [assets, setAssets] = useState<Asset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchProject = async () => {
@@ -56,8 +84,18 @@ export default function ProjectDetailPage() {
     }
   };
 
+  const fetchAssets = async () => {
+    try {
+      const response = await api.get("/assets", { params: { projectId: id } });
+      setAssets(response.data.assets);
+    } catch {
+      // silent
+    }
+  };
+
   useEffect(() => {
     fetchProject();
+    fetchAssets();
   }, [id]);
 
   if (isLoading) {
@@ -70,6 +108,9 @@ export default function ProjectDetailPage() {
   }
 
   if (!project) return null;
+
+  // clients for this project — just the project's own client
+  const projectClients = project.client ? [project.client] : [];
 
   return (
     <div className="space-y-6">
@@ -107,8 +148,10 @@ export default function ProjectDetailPage() {
           <TabsTrigger value="invoices">
             Invoices ({project.invoices?.length ?? 0})
           </TabsTrigger>
+          <TabsTrigger value="assets">Assets ({assets.length})</TabsTrigger>
         </TabsList>
 
+        {/* Documents tab — unchanged */}
         <TabsContent value="documents" className="mt-4">
           <Card className="border-slate-200">
             <CardHeader className="flex flex-row items-center justify-between">
@@ -159,6 +202,7 @@ export default function ProjectDetailPage() {
           </Card>
         </TabsContent>
 
+        {/* Invoices tab — unchanged */}
         <TabsContent value="invoices" className="mt-4">
           <Card className="border-slate-200">
             <CardHeader className="flex flex-row items-center justify-between">
@@ -200,6 +244,91 @@ export default function ProjectDetailPage() {
                             {status.label}
                           </Badge>
                           <ChevronRight className="w-4 h-4 text-slate-400" />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Assets tab — new */}
+        <TabsContent value="assets" className="mt-4">
+          <Card className="border-slate-200">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-base">Assets</CardTitle>
+              <UploadAssetDialog
+                projectId={id}
+                clients={projectClients}
+                onSuccess={fetchAssets}
+              />
+            </CardHeader>
+            <CardContent className="p-0">
+              {assets.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <ImageIcon className="w-8 h-8 text-slate-300 mb-3" />
+                  <p className="text-sm text-slate-500">No assets yet</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 p-4">
+                  {assets.map((asset) => {
+                    const status = assetStatusConfig[asset.status];
+                    const Icon = status.icon;
+                    return (
+                      <div
+                        key={asset.id}
+                        className="rounded-lg border border-slate-200 overflow-hidden cursor-pointer hover:shadow-sm transition-shadow"
+                        onClick={() =>
+                          router.push(`/dashboard/assets/${asset.id}`)
+                        }
+                      >
+                        <div className="aspect-square bg-slate-100 overflow-hidden relative">
+                          {asset.type === "VIDEO" ? (
+                            <>
+                              <video
+                                src={asset.viewUrl}
+                                className="w-full h-full object-cover"
+                                muted
+                                preload="metadata"
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                <div className="w-10 h-10 bg-white/90 rounded-full flex items-center justify-center">
+                                  <svg
+                                    className="w-4 h-4 text-slate-800 ml-0.5"
+                                    fill="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path d="M8 5v14l11-7z" />
+                                  </svg>
+                                </div>
+                              </div>
+                            </>
+                          ) : asset.viewUrl ? (
+                            <img
+                              src={asset.viewUrl}
+                              alt={asset.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <ImageIcon className="w-8 h-8 text-slate-300" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-3">
+                          <p className="text-sm font-medium text-slate-900 truncate">
+                            {asset.title}
+                          </p>
+                          <div className="flex items-center gap-1 mt-1">
+                            <Badge
+                              className={cn("text-xs gap-1", status.className)}
+                            >
+                              <Icon className="w-3 h-3" />
+                              {status.label}
+                            </Badge>
+                          </div>
                         </div>
                       </div>
                     );

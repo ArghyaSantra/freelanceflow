@@ -15,6 +15,9 @@ export type InvoiceStatus =
   | "OVERDUE"
   | "CANCELLED";
 export type ProjectStatus = "ACTIVE" | "COMPLETED" | "ARCHIVED";
+export type AssetStatus = "PENDING" | "APPROVED" | "REJECTED";
+export type AssetType = "IMAGE" | "VIDEO";
+export type AuthorType = "FREELANCER" | "CLIENT";
 
 export interface User {
   id: string;
@@ -132,4 +135,32 @@ export interface Invoice {
   createdAt: string;
   updatedAt: string;
   project?: Project;
+}
+
+export interface AssetComment {
+  id: string;
+  assetId: string;
+  authorId: string;
+  authorType: AuthorType;
+  content: string;
+  createdAt: string;
+}
+
+export interface Asset {
+  id: string;
+  workspaceId: string;
+  projectId: string;
+  clientId: string;
+  title: string;
+  description?: string;
+  fileUrl: string;
+  type: AssetType;
+  status: AssetStatus;
+  uploadedBy: string;
+  createdAt: string;
+  updatedAt: string;
+  project?: { id: string; name: string };
+  client?: { id: string; name: string };
+  comments?: AssetComment[];
+  viewUrl?: string;
 }

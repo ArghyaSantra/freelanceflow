@@ -11,11 +11,18 @@ import documentRoutes from "./routes/documents";
 import documentFieldRoutes from "./routes/documentFields";
 import publicRoutes from "./routes/public";
 import invoiceRoutes from "./routes/invoices";
+import workspaceRoutes from "./routes/workspace";
 import morgan from "morgan";
+import clientAuthRoutes from "./routes/clientAuth";
+import clientPortalRoutes from "./routes/clientPortal";
+import assetRoutes from "./routes/assets";
+import {
+  notificationRoutes,
+  clientNotificationRoutes,
+} from "./routes/notifications";
 
 dotenv.config();
 
-console.log(process.env.AWS_S3_BUCKET);
 const app = express();
 const PORT = process.env.PORT ?? 3000;
 
@@ -23,10 +30,26 @@ app.use(helmet());
 
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL ?? "http://localhost:3001",
+    origin: (origin, callback) => {
+      const allowedOrigins = [
+        "http://localhost:3001",
+        "http://localhost:3000",
+        process.env.FRONTEND_URL,
+      ].filter(Boolean);
+
+      // allow requests with no origin (mobile apps, curl, Postman)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS blocked: ${origin}`));
+      }
+    },
     credentials: true,
   }),
 );
+
 app.use(express.json());
 app.use(cookieParser());
 app.use(morgan("dev"));
@@ -42,6 +65,12 @@ app.use("/documents", documentRoutes);
 app.use("/documents", documentFieldRoutes);
 app.use("/public", publicRoutes);
 app.use("/invoices", invoiceRoutes);
+app.use("/workspace", workspaceRoutes);
+app.use("/client/auth", clientAuthRoutes);
+app.use("/client/notifications", clientNotificationRoutes);
+app.use("/client", clientPortalRoutes);
+app.use("/assets", assetRoutes);
+app.use("/notifications", notificationRoutes);
 
 app.use(errorHandler);
 

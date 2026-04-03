@@ -2,6 +2,11 @@ import { Request, Response, NextFunction } from "express";
 import prisma from "../lib/prisma";
 import { AppError } from "../middleware/errorHandler";
 import { InvoiceStatus } from "@prisma/client";
+import {
+  createNotification,
+  getClientUserId,
+  getFreelancerUserId,
+} from "../lib/notifications";
 
 interface LineItem {
   description: string;
@@ -313,6 +318,19 @@ export const sendInvoice = async (
 
     const paymentLink = `${process.env.FRONTEND_URL}/invoice/${invoice.publicToken}`;
 
+    const clientUserId = await getClientUserId(invoice.project.client.id);
+    if (clientUserId) {
+      await createNotification({
+        workspaceId,
+        recipientId: clientUserId,
+        recipientType: "CLIENT",
+        type: "INVOICE_SENT",
+        title: "New invoice received",
+        message: `Invoice ${invoice.invoiceNumber} for ₹${invoice.total.toLocaleString("en-IN")} has been sent to you.`,
+        linkPath: `/client/invoices/${id}`,
+      });
+    }
+
     res.json({
       ...updated,
       paymentLink,
@@ -355,6 +373,19 @@ export const markAsPaid = async (
         paidAt: new Date(),
       },
     });
+
+    const freelancerUserId = await getFreelancerUserId(workspaceId);
+    if (freelancerUserId) {
+      await createNotification({
+        workspaceId,
+        recipientId: freelancerUserId,
+        recipientType: "FREELANCER",
+        type: "INVOICE_PAID",
+        title: "Invoice paid",
+        message: `Invoice ${invoice.invoiceNumber} has been marked as paid.`,
+        linkPath: `/dashboard/invoices/${id}`,
+      });
+    }
 
     // cancel pending reminders
     await prisma.reminder.updateMany({

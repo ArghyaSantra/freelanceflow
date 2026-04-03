@@ -12,6 +12,7 @@ import {
   Receipt,
   Settings,
   Zap,
+  ImageIcon,
 } from "lucide-react";
 
 const navigation = [
@@ -20,6 +21,7 @@ const navigation = [
   { name: "Projects", href: "/dashboard/projects", icon: FolderOpen },
   { name: "Documents", href: "/dashboard/documents", icon: FileText },
   { name: "Invoices", href: "/dashboard/invoices", icon: Receipt },
+  { name: "Assets", href: "/dashboard/assets", icon: ImageIcon },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
